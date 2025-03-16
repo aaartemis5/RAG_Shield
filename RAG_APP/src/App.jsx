@@ -85,7 +85,7 @@ function App() {
   return (
     <div className="app-container">
       <nav className="nav-bar">
-        <div className="shield-title">RAG Shield</div>
+        <div className="shield-title">RAG Shield 🛡️</div>
         <div className="welcome">Hello, there!</div>
       </nav>
       <div className={`sidebar ${sidebarOpen ? "open" : "collapsed"}`}>
@@ -95,7 +95,7 @@ function App() {
         {sidebarOpen && (
           <>
             <h2>Chat Sessions</h2>
-            <button onClick={handleNewChat}>New Chat</button>
+            <button onClick={handleNewChat} id="newchatbtn">New Chat ➕</button>
             <div className="chat-select">
               <label htmlFor="chatDropdown">Select Previous Chat: </label>
               <select
