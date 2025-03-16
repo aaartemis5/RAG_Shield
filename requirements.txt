@@ -1,0 +1,11 @@
+langchain
+pinecone-client
+transformers
+huggingface-hub
+sentence-transformers
+requests
+fastapi
+uvicorn
+schedule
+python-dotenv
+datasets
