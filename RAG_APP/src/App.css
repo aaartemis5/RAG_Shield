@@ -1,7 +1,16 @@
-/* 
-   Replicating your Streamlit styles in a React-friendly way.
-   We replace Streamlit-specific selectors with our own custom classes.
-*/
+body{
+  margin: 0;
+}
+input, textarea {
+  background-color: black !important;
+  color: white;
+  border: 1px solid #444; /* Optional: subtle border */
+  outline: none;
+}
+
+input::placeholder, textarea::placeholder {
+  color: rgba(255, 255, 255, 0.6); /* Adjust placeholder color */
+}
 
 /* Main container background (gradient) */
 .app-container {
@@ -97,6 +106,7 @@
 .chat-select select {
   width: 100%;
   padding: 4px;
+  border-radius: 18px;
 }
 
 /* Chat container (scrollable if needed) */
@@ -142,10 +152,11 @@
   bottom: 1rem;
   left: 280px;
   width: 75%;
-  background-color: grey;
+  background-color: black;
   padding: 10px 20px;
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
   z-index: 1000;
+  border-radius: 12px;
 }
 
 /* Chat form inside the fixed form */
@@ -155,11 +166,16 @@
 }
 .chat-form input {
   flex: 1;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  padding: 12px;
+  border-radius: 20px;
   margin-right: 10px;
   outline: none;
+  color: white;
+  font-weight: 600;
+  background-color: black;
+}
+.chat-form input::placeholder{
+  color: rgb(195, 191, 191);
 }
 .chat-form button {
   background-color: #0b2dd6;
@@ -171,4 +187,16 @@
 }
 .chat-form button:hover {
   background-color: #555;
+}
+
+#newchatbtn{
+  background-color: black;
+  color: white;
+  border: 2px solid #ffffff; /* Outline color */
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 5px;
+  margin: 10px 0px;
 }
