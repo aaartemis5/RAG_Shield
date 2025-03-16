@@ -2,7 +2,7 @@ import json
 import os
 from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone
-from RagShield.config import PINECONE_API_KEY, INDEX_NAME, EMBEDDING_MODEL
+from config import PINECONE_API_KEY, INDEX_NAME, EMBEDDING_MODEL
 
 # -------------------- Initialize Pinecone --------------------
 pc = Pinecone(api_key=PINECONE_API_KEY)

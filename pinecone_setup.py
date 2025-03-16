@@ -1,6 +1,6 @@
 import os
 from pinecone import Pinecone
-from RagShield.config import PINECONE_API_KEY, PINECONE_ENVIRONMENT, INDEX_NAME
+from config import PINECONE_API_KEY, PINECONE_ENVIRONMENT, INDEX_NAME
 
 def initialize_pinecone():
     # Create an instance of the Pinecone client

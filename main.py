@@ -1,5 +1,5 @@
-from RagShield.retriever import get_retriever
-from RagShield.prompt_llm import build_prompt, get_llm_response
+from retriever import get_retriever
+from prompt_llm import build_prompt, get_llm_response
 
 def main():
     user_query = input("Enter your cybersecurity query: ")

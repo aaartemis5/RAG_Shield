@@ -1,6 +1,6 @@
 import openai
 from langchain.prompts import PromptTemplate
-from RagShield.config import OPENAI_API_KEY, OPENAI_MODEL
+from config import OPENAI_API_KEY, OPENAI_MODEL
 
 # Set OpenAI API key
 openai.api_key = OPENAI_API_KEY
