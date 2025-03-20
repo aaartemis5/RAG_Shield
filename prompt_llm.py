@@ -1,13 +1,15 @@
-import openai
+from groq import Groq
 from langchain.prompts import PromptTemplate
-from config import OPENAI_API_KEY, OPENAI_MODEL
+from config import GROQ_API_KEY, GROQ_MODEL
 
-# Set OpenAI API key
-openai.api_key = OPENAI_API_KEY
+# Instantiate the Groq client using the API key from config
+client = Groq(
+    api_key=GROQ_API_KEY,
+)
 
 def build_prompt(query: str, context: str) -> str:
     prompt_template = """
-You are a cybersecurity assistant. Based on the following context, provide a concise answer in two sentences maximum.
+You are a cybersecurity assistant. Based on the following context, provide a well informed answer to the user , Refer to the context but do not be limited to it. Also tell about how to safeguard against such attacks.
 Query: {query}
 Context: {context}
 Answer:
@@ -16,18 +18,16 @@ Answer:
     return prompt.format(query=query, context=context)
 
 def get_llm_response(prompt: str) -> str:
-    # Use OpenAI ChatCompletion API to get the response
-    response = openai.ChatCompletion.create(
-        model=OPENAI_MODEL,  # e.g., "gpt-3.5-turbo"
+    response = client.chat.completions.create(
+        model=GROQ_MODEL,  # This value is loaded from your .env via config.py
         messages=[
             {"role": "system", "content": "You are a cybersecurity assistant."},
             {"role": "user", "content": prompt}
         ],
-        max_tokens=150,
+        
         temperature=0.2
     )
-    # Extract and return the assistant's response text
-    return response["choices"][0]["message"]["content"].strip()
+    return response.choices[0].message.content.strip()
 
 if __name__ == "__main__":
     sample_query = "How do malicious scripts compromise systems?"
