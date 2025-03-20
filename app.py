@@ -7,7 +7,7 @@ from config import MONGODB_URI, MONGODB_DB, MONGODB_COLLECTION
 
 app = Flask(__name__)
 
-# Initialize MongoDB client
+# Initialize MongoDB client and collection
 client = MongoClient(MONGODB_URI)
 db = client[MONGODB_DB]
 chat_collection = db[MONGODB_COLLECTION]
@@ -20,6 +20,7 @@ def home():
 def query():
     data = request.get_json()
     user_query = data.get("query", "")
+    chat_id = data.get("chat_id")  # If provided, update that session
     if not user_query:
         return jsonify({"error": "Query not provided"}), 400
 
@@ -38,18 +39,31 @@ def query():
         final_prompt = build_prompt(user_query, context)
         answer = get_llm_response(final_prompt)
         
-        # Save the chat session in MongoDB (each session is one exchange for simplicity)
-        chat_document = {
-            "session_id": datetime.utcnow().strftime("%Y%m%d%H%M%S%f"),
-            "messages": [
-                {"role": "user", "content": user_query},
-                {"role": "assistant", "content": answer}
-            ],
-            "timestamp": datetime.utcnow()
-        }
-        chat_collection.insert_one(chat_document)
+        if chat_id:
+            # Update existing session: append new messages and update timestamp.
+            update_result = chat_collection.update_one(
+                {"session_id": chat_id},
+                {"$push": {"messages": {"$each": [
+                    {"role": "user", "content": user_query},
+                    {"role": "assistant", "content": answer}
+                ]}},
+                 "$set": {"timestamp": datetime.utcnow()}}
+            )
+        else:
+            # Create new session with a friendly title, e.g., using the first query.
+            chat_id = f"Chat {chat_collection.count_documents({}) + 1}"
+            chat_document = {
+                "session_id": chat_id,
+                "title": user_query[:50] + "..." if len(user_query) > 50 else user_query,
+                "messages": [
+                    {"role": "user", "content": user_query},
+                    {"role": "assistant", "content": answer}
+                ],
+                "timestamp": datetime.utcnow()
+            }
+            chat_collection.insert_one(chat_document)
         
-        return jsonify({"answer": answer})
+        return jsonify({"answer": answer, "chat_id": chat_id})
     except Exception as e:
         print("Error processing query:", e)
         return jsonify({"error": "Error processing query."}), 500
@@ -58,6 +72,7 @@ def query():
 def get_chats():
     # Fetch the last 50 chat sessions, sorted by most recent.
     chats = list(chat_collection.find({}, {"_id": 0}).sort("timestamp", -1).limit(50))
+    # Optionally, sort by session_id or title here
     return jsonify(chats)
 
 if __name__ == "__main__":

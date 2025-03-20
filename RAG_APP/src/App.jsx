@@ -6,7 +6,7 @@ function App() {
   const [chatHistory, setChatHistory] = useState({});
   const [chatIdCounter, setChatIdCounter] = useState(1);
   const [userInput, setUserInput] = useState("");
-  const [selectedChat, setSelectedChat] = useState("None");
+  const [selectedChat, setSelectedChat] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Fetch saved chats from the backend on component mount
@@ -15,10 +15,10 @@ function App() {
       try {
         const res = await fetch("/chats");
         const chats = await res.json();
-        // Build chatHistory object: key as session ID, value as messages array
         const history = {};
+        // Build chatHistory object: key as session_id, value as chat object
         chats.forEach((chat) => {
-          history[chat.session_id] = chat.messages;
+          history[chat.session_id] = chat;
         });
         setChatHistory(history);
       } catch (error) {
@@ -28,31 +28,29 @@ function App() {
     fetchChats();
   }, []);
 
+  // Generate a friendly chat title from the first query.
+  const generateChatTitle = (query) => {
+    const maxLength = 30;
+    if (query.length <= maxLength) {
+      return query;
+    } else {
+      return query.substring(0, maxLength).trim() + "...";
+    }
+  };
+
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
-  const handleNewChat = () => {
-    if (currentChat.length > 0) {
-      const newChatId = `Chat ${chatIdCounter}`;
-      setChatHistory((prev) => ({
-        ...prev,
-        [newChatId]: [...currentChat],
-      }));
-      setChatIdCounter((prev) => prev + 1);
-    }
-    setCurrentChat([]);
-    setSelectedChat("None");
+  const handleChatSelect = (chatId) => {
+    setSelectedChat(chatId);
+    setCurrentChat(chatHistory[chatId]?.messages || []);
   };
 
-  const handleSelectChat = (e) => {
-    const chatName = e.target.value;
-    setSelectedChat(chatName);
-    if (chatName !== "None") {
-      setCurrentChat(chatHistory[chatName] || []);
-    } else {
-      setCurrentChat([]);
-    }
+  const handleNewChat = () => {
+    // Starting a new chat session.
+    setCurrentChat([]);
+    setSelectedChat(null);
   };
 
   const handleSend = async (e) => {
@@ -63,15 +61,40 @@ function App() {
     const updatedChat = [...currentChat, newUserMsg];
 
     try {
+      const payload = { query: userInput.trim() };
+      if (selectedChat) {
+        payload.chat_id = selectedChat;
+      }
       const res = await fetch("/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: userInput.trim() }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       const backendResponse = data.answer || "No answer received.";
       const newAssistantMsg = { role: "assistant", content: backendResponse };
       updatedChat.push(newAssistantMsg);
+
+      // If no chat is selected, create a new one and generate a friendly title
+      let chatId = selectedChat;
+      if (!chatId) {
+        chatId = `Chat ${chatIdCounter}`;
+        setChatIdCounter(prev => prev + 1);
+        // Add title based on the first query
+        const newChat = {
+          session_id: chatId,
+          title: generateChatTitle(userInput.trim()),
+          messages: updatedChat,
+        };
+        setChatHistory(prev => ({ ...prev, [chatId]: newChat }));
+        setSelectedChat(chatId);
+      } else {
+        // Update existing chat session
+        setChatHistory(prev => ({
+          ...prev,
+          [chatId]: { ...prev[chatId], messages: updatedChat },
+        }));
+      }
     } catch (error) {
       console.error("Error fetching response:", error);
       const newAssistantMsg = { role: "assistant", content: "Error fetching response." };
@@ -93,25 +116,22 @@ function App() {
           {sidebarOpen ? "«" : "»"}
         </button>
         {sidebarOpen && (
-          <>
+          <div className="chat-list">
             <h2>Chat Sessions</h2>
             <button onClick={handleNewChat} id="newchatbtn">New Chat ➕</button>
-            <div className="chat-select">
-              <label htmlFor="chatDropdown">Select Previous Chat: </label>
-              <select
-                id="chatDropdown"
-                value={selectedChat}
-                onChange={handleSelectChat}
-              >
-                <option value="None">None</option>
-                {Object.keys(chatHistory).map((chatId) => (
-                  <option key={chatId} value={chatId}>
-                    {chatId}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </>
+            {Object.keys(chatHistory).length === 0 && <p>No chats yet.</p>}
+            <ul>
+              {Object.entries(chatHistory).map(([chatId, chat]) => (
+                <li
+                  key={chatId}
+                  onClick={() => handleChatSelect(chatId)}
+                  className={selectedChat === chatId ? "selected" : ""}
+                >
+                  {chat.title || chatId}
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
       <div className="chat-container">
