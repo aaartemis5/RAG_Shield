@@ -4,6 +4,7 @@ from prompt_llm import build_prompt, get_llm_response
 from pymongo import MongoClient
 from datetime import datetime
 from config import MONGODB_URI, MONGODB_DB, MONGODB_COLLECTION
+import os
 
 app = Flask(__name__)
 
