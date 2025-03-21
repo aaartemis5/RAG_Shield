@@ -74,7 +74,6 @@ function App() {
       const newAssistantMsg = { role: "assistant", content: backendResponse };
       updatedChat.push(newAssistantMsg);
 
-      // If no chat is selected, create a new session with a friendly title.
       let chatId = selectedChat;
       if (!chatId) {
         chatId = `Chat ${chatIdCounter}`;

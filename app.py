@@ -1,16 +1,19 @@
+import os
 from flask import Flask, request, jsonify
+from flask_cors import CORS  # Enable CORS for cross-origin requests
 from retriever import get_retriever
 from prompt_llm import build_prompt, get_llm_response
 from pymongo import MongoClient
 from datetime import datetime
+import uuid
 from config import MONGODB_URI, MONGODB_DB, MONGODB_COLLECTION
-import os
 
 app = Flask(__name__)
+CORS(app)  # Allow all origins; adjust if needed for production
 
 # Initialize MongoDB client and collection
 client = MongoClient(MONGODB_URI)
-db = client[MONGODB_DB] 
+db = client[MONGODB_DB]
 chat_collection = db[MONGODB_COLLECTION]
 
 @app.route("/", methods=["GET"])
@@ -21,14 +24,15 @@ def home():
 def query():
     data = request.get_json()
     user_query = data.get("query", "")
-    chat_id = data.get("chat_id")  # If provided, update that session
+    chat_id = data.get("chat_id")  # Provided if continuing a session
+
     if not user_query:
         return jsonify({"error": "Query not provided"}), 400
 
     try:
         retriever = get_retriever()
         docs = retriever.invoke(user_query)
-        
+
         # Concatenate retrieved text from documents.
         context_parts = []
         for doc in docs:
@@ -36,13 +40,13 @@ def query():
             if text:
                 context_parts.append(text)
         context = "\n\n".join(context_parts)
-        
+
         final_prompt = build_prompt(user_query, context)
         answer = get_llm_response(final_prompt)
-        
+
         if chat_id:
-            # Update existing session: append new messages and update timestamp.
-            update_result = chat_collection.update_one(
+            # Update existing session by appending new messages.
+            chat_collection.update_one(
                 {"session_id": chat_id},
                 {"$push": {"messages": {"$each": [
                     {"role": "user", "content": user_query},
@@ -51,11 +55,12 @@ def query():
                  "$set": {"timestamp": datetime.utcnow()}}
             )
         else:
-            # Create new session with a friendly title, e.g., using the first query.
-            chat_id = f"Chat {chat_collection.count_documents({}) + 1}"
+            # Create a new session with a unique ID and friendly title.
+            chat_id = str(uuid.uuid4())
+            title = user_query if len(user_query) <= 30 else user_query[:30].strip() + "..."
             chat_document = {
                 "session_id": chat_id,
-                "title": user_query[:50] + "..." if len(user_query) > 50 else user_query,
+                "title": title,
                 "messages": [
                     {"role": "user", "content": user_query},
                     {"role": "assistant", "content": answer}
@@ -63,7 +68,7 @@ def query():
                 "timestamp": datetime.utcnow()
             }
             chat_collection.insert_one(chat_document)
-        
+
         return jsonify({"answer": answer, "chat_id": chat_id})
     except Exception as e:
         print("Error processing query:", e)
@@ -71,9 +76,8 @@ def query():
 
 @app.route("/chats", methods=["GET"])
 def get_chats():
-    # Fetch the last 50 chat sessions, sorted by most recent.
-    chats = list(chat_collection.find({}, {"_id": 0}).sort("timestamp", -1).limit(50))
-    # Optionally, sort by session_id or title here
+    # Fetch all chat sessions, sorted by most recent.
+    chats = list(chat_collection.find({}, {"_id": 0}).sort("timestamp", -1))
     return jsonify(chats)
 
 if __name__ == "__main__":
