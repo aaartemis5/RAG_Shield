@@ -5,6 +5,7 @@ pymongo==4.11.3
 python-dotenv==1.0.1
 langchain==0.3.19
 langchain-community==0.3.18
+langchain-huggingface==0.1.2
 pinecone-client==5.0.1
 transformers==4.49.0
 huggingface-hub==0.29.0
