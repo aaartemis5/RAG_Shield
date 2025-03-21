@@ -9,7 +9,7 @@ client = Groq(
 
 def build_prompt(query: str, context: str) -> str:
     prompt_template = """
-You are a cybersecurity assistant. Based on the following context, provide a well informed answer to the user , Refer to the context but do not be limited to it.provide answer in a completely formatted manner with spaces at appropriate places for better reading experience. Also tell about how to safeguard against such attacks.
+You are a cybersecurity assistant. Based on the following context, provide a well informed answer to the user , Refer to the context but do not be limited to it.provide answer in a completely formatted manner with spaces at appropriate places for better reading experience.orovide answer as if you are the personal assistant ready to help out the user that is entering queries and are willing to help , still be a bit concise ,also in the end ask questions like do u want to do this or do u want to know more about this -questions like these at the end would be great . Also tell about how to safeguard against such attacks.
 Query: {query}
 Context: {context}
 Answer:

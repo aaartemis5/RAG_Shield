@@ -1,39 +1,76 @@
 import os
+import sys
 import json
+import subprocess
+import time
+
+def run_python_files(directory, timeout=30, poll_interval=0.5):
+    print("Running Python files concurrently...")
+    # Files we don't want to execute because they're not meant to be run standalone
+    exclude_files = {
+        'config.py', 'index.py', 'app.py', 'requirements.txt',
+        'interface.py', 'main.py', 'pinecone_setup.py',
+        'prompt_llm.py', 'retriever.py', 'try.py'
+    }
+    # Get list of Python files excluding this file and any in the exclude list
+    python_files = [
+        f for f in os.listdir(directory)
+        if f.endswith('.py') and f != os.path.basename(__file__) and f not in exclude_files
+    ]
+    # Start processes and track start times
+    processes = []
+    for filename in python_files:
+        file_path = os.path.join(directory, filename)
+        print(f"Executing: {filename}")
+        try:
+            # Use sys.executable to ensure the same interpreter (venv) is used
+            proc = subprocess.Popen([sys.executable, file_path])
+            processes.append({'filename': filename, 'process': proc, 'start_time': time.time()})
+        except Exception as e:
+            print(f"Failed to start {filename}: {e}")
+
+    # Poll until all processes have finished or been terminated
+    while processes:
+        for proc_info in processes.copy():
+            proc = proc_info['process']
+            filename = proc_info['filename']
+            elapsed = time.time() - proc_info['start_time']
+            if proc.poll() is not None:
+                print(f"{filename} completed.")
+                processes.remove(proc_info)
+            elif elapsed > timeout:
+                print(f"Timeout expired for {filename}; terminating process.")
+                proc.terminate()
+                proc.wait()
+                processes.remove(proc_info)
+        time.sleep(poll_interval)
 
 def combine_json_files(directory, output_file):
-    # Initialize a list to hold combined data
+    print("Combining JSON files...")
     combined_data = []
+    output_filename = os.path.basename(output_file)
 
-    # Iterate over all files in the directory
     for filename in os.listdir(directory):
-        if filename.endswith('.json'):
+        # Skip the output file if it already exists
+        if filename.endswith('.json') and filename != output_filename:
             file_path = os.path.join(directory, filename)
-            
-            # Open and load the JSON file
-            with open(file_path, 'r') as f:
-                data = json.load(f)
-                
-                # If the JSON file contains a list, extend the combined_data list
+            try:
+                with open(file_path, 'r') as f:
+                    data = json.load(f)
                 if isinstance(data, list):
                     combined_data.extend(data)
                 else:
-                    # If the JSON file contains a single object, append it to the combined_data list
                     combined_data.append(data)
+            except Exception as e:
+                print(f"Skipping {filename} due to error: {e}")
 
-    # Write the combined data to a new JSON file as an array
     with open(output_file, 'w') as f:
         json.dump(combined_data, f, indent=4)
-
     print(f"Combined data has been written to {output_file}")
 
-# Example usage
 if __name__ == "__main__":
-    # Directory containing the JSON files
     input_directory = './'
-    
-    # Output file where the combined JSON will be saved
     output_file = 'data.json'
-    
-    # Combine the JSON files
+
+    run_python_files(input_directory)
     combine_json_files(input_directory, output_file)
