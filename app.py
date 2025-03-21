@@ -9,7 +9,7 @@ app = Flask(__name__)
 
 # Initialize MongoDB client and collection
 client = MongoClient(MONGODB_URI)
-db = client[MONGODB_DB]
+db = client[MONGODB_DB] 
 chat_collection = db[MONGODB_COLLECTION]
 
 @app.route("/", methods=["GET"])
@@ -76,5 +76,5 @@ def get_chats():
     return jsonify(chats)
 
 if __name__ == "__main__":
-    # Disable reloader to avoid ECONNRESET issues.
-    app.run(debug=True, use_reloader=False)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=True, use_reloader=False, host="0.0.0.0", port=port)
