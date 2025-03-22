@@ -1,0 +1,22 @@
+{
+    "manifest_version": 3,
+    "name": "RAG Shield Extension",
+    "version": "1.0",
+    "description": "A cybersecurity assistant extension that queries your backend API.",
+    "permissions": [
+      "activeTab",
+      "scripting",
+      "storage",
+      "notifications"
+    ],
+    "action": {
+      "default_popup": "popup.html",
+      "default_icon": {
+        "128": "icons/icon128.png"
+      }
+    },
+    "background": {
+      "service_worker": "background.js"
+    }
+  }
+  

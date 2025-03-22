@@ -1,6 +1,5 @@
-import os
 from flask import Flask, request, jsonify
-from flask_cors import CORS  # Enable CORS for cross-origin requests
+from flask_cors import CORS
 from retriever import get_retriever
 from prompt_llm import build_prompt, get_llm_response
 from pymongo import MongoClient
@@ -9,7 +8,7 @@ import uuid
 from config import MONGODB_URI, MONGODB_DB, MONGODB_COLLECTION
 
 app = Flask(__name__)
-CORS(app)  # Allow all origins; adjust if needed for production
+CORS(app, resources={r"/*": {"origins": "*"}})  # Allow all origins
 
 # Initialize MongoDB client and collection
 client = MongoClient(MONGODB_URI)
@@ -45,8 +44,8 @@ def query():
         answer = get_llm_response(final_prompt)
 
         if chat_id:
-            # Update existing session by appending new messages.
-            chat_collection.update_one(
+            # Update existing session: append new messages and update timestamp.
+            update_result = chat_collection.update_one(
                 {"session_id": chat_id},
                 {"$push": {"messages": {"$each": [
                     {"role": "user", "content": user_query},
@@ -55,7 +54,7 @@ def query():
                  "$set": {"timestamp": datetime.utcnow()}}
             )
         else:
-            # Create a new session with a unique ID and friendly title.
+            # Create a new session with a friendly title.
             chat_id = str(uuid.uuid4())
             title = user_query if len(user_query) <= 30 else user_query[:30].strip() + "..."
             chat_document = {
@@ -76,10 +75,9 @@ def query():
 
 @app.route("/chats", methods=["GET"])
 def get_chats():
-    # Fetch all chat sessions, sorted by most recent.
-    chats = list(chat_collection.find({}, {"_id": 0}).sort("timestamp", -1))
+    # Fetch the last 50 chat sessions, sorted by most recent.
+    chats = list(chat_collection.find({}, {"_id": 0}).sort("timestamp", -1).limit(50))
     return jsonify(chats)
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(debug=True, use_reloader=False, host="0.0.0.0", port=port)
+    app.run(debug=True, use_reloader=False)

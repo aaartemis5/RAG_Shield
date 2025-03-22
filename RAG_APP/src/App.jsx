@@ -9,17 +9,14 @@ function App() {
   const [selectedChat, setSelectedChat] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // Get backend URL from Vite environment variables.
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
-
-  // Fetch saved chats from the backend on component mount.
+  // Fetch saved chats from the backend on component mount
   useEffect(() => {
     async function fetchChats() {
       try {
-        const res = await fetch(`${backendUrl}/chats`);
+        const res = await fetch("/chats");
         const chats = await res.json();
         const history = {};
-        // Build chatHistory object: key as session_id, value as chat object.
+        // Build chatHistory object: key as session_id, value as chat object
         chats.forEach((chat) => {
           history[chat.session_id] = chat;
         });
@@ -29,12 +26,16 @@ function App() {
       }
     }
     fetchChats();
-  }, [backendUrl]);
+  }, []);
 
-  // Helper to generate a friendly title from the first query.
+  // Generate a friendly chat title from the first query.
   const generateChatTitle = (query) => {
     const maxLength = 30;
-    return query.length <= maxLength ? query : query.substring(0, maxLength).trim() + "...";
+    if (query.length <= maxLength) {
+      return query;
+    } else {
+      return query.substring(0, maxLength).trim() + "...";
+    }
   };
 
   const toggleSidebar = () => {
@@ -47,7 +48,7 @@ function App() {
   };
 
   const handleNewChat = () => {
-    // Start a new chat session.
+    // Starting a new chat session.
     setCurrentChat([]);
     setSelectedChat(null);
   };
@@ -64,7 +65,7 @@ function App() {
       if (selectedChat) {
         payload.chat_id = selectedChat;
       }
-      const res = await fetch(`${backendUrl}/query`, {
+      const res = await fetch("/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -74,10 +75,12 @@ function App() {
       const newAssistantMsg = { role: "assistant", content: backendResponse };
       updatedChat.push(newAssistantMsg);
 
+      // If no chat is selected, create a new one and generate a friendly title
       let chatId = selectedChat;
       if (!chatId) {
         chatId = `Chat ${chatIdCounter}`;
         setChatIdCounter(prev => prev + 1);
+        // Add title based on the first query
         const newChat = {
           session_id: chatId,
           title: generateChatTitle(userInput.trim()),
@@ -86,7 +89,7 @@ function App() {
         setChatHistory(prev => ({ ...prev, [chatId]: newChat }));
         setSelectedChat(chatId);
       } else {
-        // Update existing chat session.
+        // Update existing chat session
         setChatHistory(prev => ({
           ...prev,
           [chatId]: { ...prev[chatId], messages: updatedChat },
